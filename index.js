@@ -5,11 +5,9 @@ const path = require('path');
 const _ = require('lodash');
 
 const env = require('nodejslib/env');
+const salesman = require('salesman.js');
 
-const Path = require('./src/path');
-const Point = require('./src/point');
-const utils = require('./src/utils');
-const nameGenerator = require('./src/nameGenerator');
+const nameGenerator = require('./app/nameGenerator');
 
 const port = 3001;
 
@@ -64,23 +62,12 @@ async function calcVisitOrder(ctx){
     const points = ctx.request.body;
 
     const tspPoints = points.map((point) => {
-        return new Point(point.latlng[0], point.latlng[1]);
+        return new salesman.Point(point.latlng[0], point.latlng[1]);
     });
 
-    let tempCoeff;
+    const order = salesman.solve(tspPoints);
 
-    const path = new Path(tspPoints);
-    if (points.length < 2) return path.order; // There is nothing to optimize
-    if (!tempCoeff){
-        tempCoeff = 1 - Math.exp(-10 - Math.min(points.length, 1e6)/1e5);
-    }
-
-    const startTemp = 100 * utils.distance(path.access(0), path.access(1));
-    for (let i = startTemp; i > 1e-6; i *= tempCoeff) {
-        path.change(i);
-    }
-
-    ctx.body = path.order;
+    ctx.body = order;
 }
 
 server.route.get('/server/generate-random-pois', generateRandomPois);

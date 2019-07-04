@@ -1,32 +1,32 @@
 {
-  "name": "salesman.js",
-  "version": "2.0.4",
+  "name": "route-plan",
+  "version": "1.0.0",
   "description": "Solves the traveling salesman problem using simulated annealing.",
-  "main": "salesman.js",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js",
     "test": "node test.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/maptile/salesman.js.git"
+    "url": "https://github.com/maptile/route-plan.git"
   },
   "keywords": [
-    "traveling",
+    "customer",
+    "map",
+    "path",
+    "points",
     "salesman",
     "simulated",
-    "annealing",
-    "algorithm",
-    "path",
-    "points"
+    "traveling",
+    "visiting"
   ],
   "author": "maptile",
-  "originalAuthor": "Ophir LOJKINE",
-  "license": "Apache v2",
+  "license": "MIT",
   "bugs": {
-    "url": "https://github.com/maptile/salesman.js/issues"
+    "url": "https://github.com/maptile/route-plan/issues"
   },
-  "homepage": "https://github.com/maptile/salesman.js",
+  "homepage": "https://github.com/maptile/route-plan",
   "devDependencies": {
     "eslint": "^5.16.0",
     "eslint-config-google": "^0.13.0",
@@ -39,6 +39,7 @@
     "moment": "^2.24.0",
     "nodejslib": "github:maptile/nodejslib",
     "request": "^2.88.0",
+    "salesman.js": "github:maptile/salesman.js",
     "winston": "^3.2.1"
   }
 }

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>TSP Demo</title>
+        <script type="text/javascript" src="assets/jquery-3.4.1.min.js"></script>
+        <script type="text/javascript" src="assets/lodash.min.js"></script>
+        <link rel="stylesheet" href="assets/leaflet/leaflet.css" />
+        <!-- Make sure you put this AFTER Leaflet's CSS -->
+        <script type="text/javascript" src="assets/leaflet/leaflet.js"></script>
+        <script type="text/javascript" src="assets/leaflet.ChineseTmsProviders.js"></script>
+        <script type="text/javascript" src="salesman.js"></script>
+        <script type="text/javascript" src="nameGenerator.js"></script>
+        <script type="text/javascript" src="page.js"></script>
+
+        <style type="text/css">
+            html, body{
+                margin: 0;
+                padding: 0;
+                width: 100%;
+                height: 100%;
+            }
+
+            #control{
+                width: 200px;
+                float: left;
+            }
+
+            #mapid {
+                margin-left: 200px;
+                height: 100%;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="control">
+            Point count: <input id="count" value="20" />
+            <button id="generatePoints">Generate Points</button>
+            <button id="calcAndDraw">Calc & Draw</button>
+            <button id="clear">Clear</button>
+            <div id="result"></div>
+        </div>
+
+        <div id="mapid"></div>
+    </body>
+</html>

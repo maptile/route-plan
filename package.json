@@ -1,0 +1,44 @@
+{
+  "name": "salesman.js",
+  "version": "2.0.4",
+  "description": "Solves the traveling salesman problem using simulated annealing.",
+  "main": "salesman.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/maptile/salesman.js.git"
+  },
+  "keywords": [
+    "traveling",
+    "salesman",
+    "simulated",
+    "annealing",
+    "algorithm",
+    "path",
+    "points"
+  ],
+  "author": "maptile",
+  "originalAuthor": "Ophir LOJKINE",
+  "license": "Apache v2",
+  "bugs": {
+    "url": "https://github.com/maptile/salesman.js/issues"
+  },
+  "homepage": "https://github.com/maptile/salesman.js",
+  "devDependencies": {
+    "eslint": "^5.16.0",
+    "eslint-config-google": "^0.13.0",
+    "eslint-plugin-html": "^6.0.0"
+  },
+  "dependencies": {
+    "aok-server": "github:maptile/aok-server",
+    "leaflet.chinatmsproviders": "^2.0.3",
+    "lodash": "^4.17.11",
+    "moment": "^2.24.0",
+    "nodejslib": "github:maptile/nodejslib",
+    "request": "^2.88.0",
+    "winston": "^3.2.1"
+  }
+}

@@ -1,0 +1,51 @@
+{
+    "extends": ["eslint:recommended", "google"],
+    "parserOptions": {
+        "ecmaVersion": 5,
+        "sourceType": "module",
+        "ecmaFeatures": {
+            "jsx": true
+        }
+    },
+    "plugins": [
+        "html"
+    ],
+    "settings": {
+        "html/html-extensions": [".html", ".ejs"]
+    },
+    "env": {
+        "browser": true,
+        "jquery": true
+    },
+    "rules": {
+        "space-before-function-paren": ["off", {
+            "anonymous": "always",
+            "named": "always",
+            "asyncArrow": "always"
+        }],
+        "indent": ["error", 4],
+        "require-jsdoc": ["off"],
+        "no-var": ["off"],
+        "spaced-comment": ["warn"],
+        "max-len": ["warn", {"code": 120, "ignoreComments": true, "ignoreStrings": true, "ignoreTemplateLiterals": true}],
+        "object-curly-spacing": ["off"],
+        "no-invalid-this": ["off"],
+        "space-before-blocks": ["off"],
+        "keyword-spacing": ["off"],
+        "comma-dangle": ["off"],
+        "brace-style": ["off"],
+        "block-spacing": ["off"],
+        "prefer-arrow-callback": "off",
+        "prefer-const": "off",
+        "no-const-assign": "error",
+        "no-extra-bind": "error",
+        "no-undef": "error",
+        "no-console": "off",
+        "no-tabs": "error"
+    },
+    "globals": {
+        "$": false,
+        "L": false,
+        "_": false
+    }
+}

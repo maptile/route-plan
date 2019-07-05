@@ -2,11 +2,9 @@ const winston = require('winston');
 const Server = require('aok-server');
 const path = require('path');
 
-const _ = require('lodash');
-
 const env = require('nodejslib/env');
 
-const poiGenerator = require('./app/poiGenerator');
+const poi = require('./app/poi');
 const visitOrder = require('./app/visitOrder');
 
 const port = 3001;
@@ -22,12 +20,19 @@ const logger = winston.createLogger({
     ]
 });
 
-const server = new Server();
+async function init(ctx){
+    logger.info(`Getting locations`);
+
+    poi.init(6);
+
+    logger.debug('response body is');
+    ctx.body = '';
+}
 
 async function generateRandomPois(ctx){
     logger.info(`Getting locations`);
 
-    const points = poiGenerator.generateRandom(20);
+    const points = poi.generateRandom(20);
     logger.debug('response body is');
     logger.debug(points);
     ctx.body = points;
@@ -43,6 +48,8 @@ async function calcVisitOrder(ctx){
     ctx.body = order;
 }
 
+const server = new Server();
+server.route.post('/server/init', init);
 server.route.get('/server/generate-random-pois', generateRandomPois);
 server.route.post('/server/calc-visit-order', calcVisitOrder);
 

@@ -1,62 +1,157 @@
 const _ = require('lodash');
+const solver = require('node-tspsolver');
 
-const companyNameGenerator = require('../components/companyNameGenerator');
-const db = require('../components/simpleJsonFileDb');
+const jsonDb = require('../components/simpleJsonFileDb');
 const gaode = require('../components/gaode');
 
 const sampleData = require('../sampledata/customers.json');
 
-function generateRandom(count){
-    const points = [];
-
-    // always add the home point
-    points.push({
-        name: 'start',
-        latlng: [31.069445, 121.380901]
+async function getCustomersFromSampleData(count){
+    logger.debug('Getting customers from sample data');
+    return sampleData.slice(0, count).map((customer, index) => {
+        customer.id = index + 1;
+        return customer;
     });
-
-    const loopCount = count || 20;
-
-    for(let i = 0; i < loopCount; i++){
-        const lat = _.random(30957590, 31228068) / 1000000;
-        const lng = _.random(121043243, 121677703) / 1000000;
-
-        const nameIndex = (i + 1).toString().padStart(2, '0');
-
-        points.push({
-            name: nameIndex + ' ' + companyNameGenerator.generate(),
-            latlng: [lat, lng]
-        });
-    }
-
-    return points;
 }
 
-async function init(count){
-    const customers = sampleData.slice(0, count);
+async function fillCustomerLatLng(customers){
+    logger.debug('Getting customers latlng');
+    const db = jsonDb.use('customer');
 
-    const arr = [];
+    for(const customer of customers){
+        customer.latLng = await gaode.getLatLngByAddress(customer.address);
 
-    for(const i of customers){
-        customers[i].id = i;
-        const address = customers[i].address;
-        const poi = await gaode.getPoiInfo(address);
-        customers[i].latlng = poi.latlng;
+        db.upsert(customer);
     }
 
-    for(const i of customers){
-        const row = [];
-        for(const j of customers){
-            row.push(await gaode.getRoute(customers[i], customers[j]));
+    logger.debug('Finished getting customers latlng');
+
+    db.save();
+
+    logger.debug('Data has been saved to db');
+}
+
+async function calcRouteBetween(c1, c2){
+    let route;
+    if(c1._id == c2._id){
+        logger.debug('The two points is the same, simply use predefined route');
+        route = {
+            duration: 0
+        };
+    } else {
+        logger.debug('Getting route from gaode');
+        route = await gaode.getRoute(c1.latLng, c2.latLng);
+        logger.debug('Got route');
+    }
+
+    return route;
+}
+
+async function generateRouteMatrix(customerIds){
+    const routeDb = jsonDb.use('route');
+
+    const twoDimensionalnMatrix = [];
+
+    for(const cid1 of customerIds){
+        const arr = [];
+        for(const cid2 of customerIds){
+            const route = routeDb.find(cid1, cid2);
+
+            arr.push(parseInt(route.duration));
         }
 
-        arr.push(row);
+        twoDimensionalnMatrix.push(arr);
     }
 
-    console.log(JSON.stringify(arr, null, 2));
+    return twoDimensionalnMatrix;
+}
+
+async function getNewCustomers(customers){
+    const db = jsonDb.use('customer');
+
+    const newCustomers = [];
+    for(const customer of customers){
+        const existingCustomer = await db.find(customer._id);
+
+        if(!existingCustomer){
+            logger.trace('No existing customer, will insert one');
+            newCustomers.push(customer);
+            continue;
+        }
+
+        if(customer._rev != existingCustomer._rev){
+            logger.trace('Using newer customer data to replace existing one');
+            newCustomers.push(customer);
+            continue;
+        }
+    }
+
+    return newCustomers;
+}
+
+async function calcAllAvailableRoutes(customers){
+    const customerDb = jsonDb.use('customer');
+    const allCustomers = customerDb.all();
+
+    const routeDb = jsonDb.use('route');
+
+    for(const customer of customers){
+        for(const existingCustomer of allCustomers){
+            await routeDb.delete(customer._id, existingCustomer._id);
+            const route = await calcRouteBetween(customer, existingCustomer);
+
+            await routeDb.insert(customer._id, existingCustomer._id, route);
+        }
+    }
+
+    routeDb.save();
+}
+
+async function addCustomers(ctx){
+    logger.trace('Adding new customers');
+
+    const newCustomers = await getNewCustomers(ctx.body.data);
+
+    if(!newCustomers){
+        ctx.body = '';
+        return;
+    }
+
+    await fillCustomerLatLng(newCustomers);
+
+    await calcAllAvailableRoutes(newCustomers);
+
+    ctx.body = makeResponseData(null, 'ok');
+}
+
+async function calcVisitOrder(ctx){
+    const customerIds = ctx.body.data;
+
+    const routeMatrix = await generateRouteMatrix(customerIds);
+
+    logger.debug('routeMatrix is', routeMatrix);
+    const order = await solver.solveTsp(routeMatrix, true, {});
+
+    logger.debug('response body is', order);
+
+    ctx.body = makeResponseData(null, order);
+}
+
+function makeResponseData(error, data){
+    if(error){
+        return {
+            status: 0,
+            error
+        };
+    }
+
+    return {
+        status: 1,
+        data
+    };
 }
 
 module.exports = {
-    generateRandom,
-    init
+    addCustomers,
+    calcVisitOrder
 };

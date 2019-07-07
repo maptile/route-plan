@@ -39,5 +39,6 @@
         "no-tabs": "error"
     },
     "globals": {
+        "logger": false
     }
 }

@@ -38,11 +38,24 @@ function save(){
 }
 
 function upsert(dbName, data){
-    if(!data || !data.id){
-        throw new Error('data must have "id" property');
+    if(!data){
+        throw new Error('Invalid argument: data is empty');
     }
-    db[dbName][data.id] = data;
-    save();
+
+    if(Array.isArray(data)){
+        for(const d of data){
+            if(!d._id){
+                throw new Error('Invalid argument: data must have "_id" property');
+            }
+
+            db[dbName][d._id] = d;
+        }
+    } else {
+        if(!data._id){
+            throw new Error('Invalid argument: data must have "_id" property');
+        }
+        db[dbName][data._id] = data;
+    }
 }
 
 function all(dbName){
@@ -72,23 +85,56 @@ function use(dbName){
         db[dbName] = {};
     }
 
-    return {
+    const interfaces = {
         all: () => {
             return all(dbName);
-        },
-        find: (id) => {
-            return find(dbName, id);
-        },
-        upsert: (data) => {
-            return upsert(dbName, data);
-        },
-        delete: (id) => {
-            return del(dbName, id);
-        },
-        save
+        }
     };
+
+    if(dbName == 'route'){
+        interfaces.find = function(id1, id2){
+            let id = `${id1}:${id2}`;
+            const result = find(dbName, id);
+
+            if(result){
+                return result;
+            }
+
+            id = `${id2}:${id1}`;
+
+            return find(dbName, id);
+        };
+
+        interfaces.insert = function(id1, id2, data){
+            interfaces.find(id1, id2);
+        };
+
+        interfaces.update = function(id1, id2, data){
+            
+        };
+
+        interfaces.delete = function(id1, id2){
+            
+        };
+    } else {
+        return {
+            find: (id) => {
+                return find(dbName, id);
+            },
+            insert: (data) => {
+                return upsert(dbName, data);
+            },
+            update: (data) => {
+                return upsert(dbName, data);
+            },
+            delete: (id) => {
+                return del(dbName, id);
+            }
+        };
+    }
 }
 
 module.exports = {
-    use
+    use,
+    save
 };

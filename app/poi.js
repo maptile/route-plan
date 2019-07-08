@@ -1,37 +1,22 @@
-const _ = require('lodash');
 const solver = require('node-tspsolver');
 
 const jsonDb = require('../components/simpleJsonFileDb');
-const gaode = require('../components/gaode');
-
-const sampleData = require('../sampledata/customers.json');
-
-async function getCustomersFromSampleData(count){
-    logger.debug('Getting customers from sample data');
-    return sampleData.slice(0, count).map((customer, index) => {
-        customer.id = index + 1;
-        return customer;
-    });
-}
+const tencent = require('../components/tencent');
 
 async function fillCustomerLatLng(customers){
     logger.debug('Getting customers latlng');
-    const db = jsonDb.use('customer');
 
     for(const customer of customers){
-        customer.latLng = await gaode.getLatLngByAddress(customer.address);
-
-        db.upsert(customer);
+        customer.latLng = await tencent.getLatLngByAddress(customer.address);
+        logger.debug(`Customer [${customer._id}]'s latlng is ${customer.latLng.toString()}`);
     }
 
     logger.debug('Finished getting customers latlng');
-
-    db.save();
-
-    logger.debug('Data has been saved to db');
 }
 
 async function calcRouteBetween(c1, c2){
+    logger.debug('Calc route between', c1, 'and', c2);
+
     let route;
     if(c1._id == c2._id){
         logger.debug('The two points is the same, simply use predefined route');
@@ -39,8 +24,9 @@ async function calcRouteBetween(c1, c2){
             duration: 0
         };
     } else {
-        logger.debug('Getting route from gaode');
-        route = await gaode.getRoute(c1.latLng, c2.latLng);
+        logger.debug('Getting route from tencent');
+
+        route = await tencent.getRoute(c1.latLng, c2.latLng);
         logger.debug('Got route');
     }
 
@@ -100,20 +86,30 @@ async function calcAllAvailableRoutes(customers){
             await routeDb.delete(customer._id, existingCustomer._id);
             const route = await calcRouteBetween(customer, existingCustomer);
 
+            console.log(customer, existingCustomer);
             await routeDb.insert(customer._id, existingCustomer._id, route);
         }
     }
-
-    routeDb.save();
 }
 
 async function addCustomers(ctx){
     logger.trace('Adding new customers');
 
-    const newCustomers = await getNewCustomers(ctx.body.data);
+    let data;
+    try{
+        data = JSON.parse(ctx.request.body.data);
+    } catch(e){
+        logger.error('Invalid posted data');
+        ctx.body = makeResponseData(e);
+        return;
+    }
+
+    const newCustomers = await getNewCustomers(data);
 
     if(!newCustomers){
-        ctx.body = '';
+        ctx.body = makeResponseData(null, {
+            info: 'All posted customers are exist in db, and no further action will be done'
+        });
         return;
     }
 
@@ -121,6 +117,9 @@ async function addCustomers(ctx){
 
     await calcAllAvailableRoutes(newCustomers);
 
+    const customerDb = jsonDb.use('customer');
+    customerDb.upsert(newCustomers);
+    jsonDb.save();
     ctx.body = makeResponseData(null, 'ok');
 }
 
@@ -145,10 +144,16 @@ function makeResponseData(error, data){
         };
     }
 
-    return {
-        status: 1,
-        data
-    };
+    if(typeof data === 'string'){
+        return {
+            status: 1,
+            data
+        };
+    } else {
+        return Object.assign(data, {
+            status: 1
+        });
+    }
 }
 
 module.exports = {

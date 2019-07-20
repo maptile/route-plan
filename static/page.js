@@ -1,9 +1,9 @@
 /*
   globals
-  Point
-  solve
-  generateName
- */
+*/
+
+var apiEndpoint = 'http://localhost:3001/api/v1';
+
 $(function(){
     var mymap = L.map('mapid', {
         center: [31.123496, 121.363906],
@@ -78,56 +78,87 @@ $(function(){
         markersLayerGroup.addTo(mymap);
     }
 
+    function getCustomers(ids, callback){
+        var data = {
+            ids: JSON.stringify(ids)
+        };
+
+        var url = apiEndpoint + '/customer';
+        $.getJSON(url, data).done(function(data){
+            if(data.status != 1){
+                return callback(data.error);
+            }
+
+            callback(null, data.data);
+        }).fail(function(err){
+            callback(err);
+        });
+    }
+
     function generateMarkers(){
         clearMap();
-        // always add the home point
-        points.push({
-            name: 'start',
-            latlng: [31.069445, 121.380901]
-        });
+        var customerIds = JSON.parse($('#count').val());
+        getCustomers(customerIds, function(err, customers){
+            if(err){
+                return alert(err);
+            }
 
-        var count = $('#count').val() || 20;
-
-        for(let i = 0; i < count; i++){
-            const lat = _.random(30957590, 31228068) / 1000000;
-            const lng = _.random(121043243, 121677703) / 1000000;
-
-            var nameIndex = (i + 1).toString().padStart(2, '0');
-
-            points.push({
-                name: nameIndex + ' ' + generateName(),
-                latlng: [lat, lng]
+            _.forEach(customers, function(customer){
+                points.push({
+                    _id: customer._id,
+                    name: customer.name,
+                    latlng: [
+                        parseFloat(customer.latLng.lat),
+                        parseFloat(customer.latLng.lng)
+                    ]
+                });
             });
-        }
 
-        drawMarkers();
-    }
-
-    function calc(){
-        const tspPoints = points.map(function(point) {
-            return new Point(point.latlng[0], point.latlng[1]);
+            drawMarkers();
         });
-
-        const res = solve(tspPoints);
-        return res;
     }
 
-    function drawLine(order){
+    function calc(callback){
+        var url = apiEndpoint + '/plan';
+        var data = {
+            customerIds: JSON.parse($('#count').val())
+        };
+
+        $.post(url, data, 'json').done(function(result){
+            if(result.status != 1){
+                return callback(result.error);
+            }
+
+            callback(null, result);
+        }).fail(function(err){
+            callback(err);
+        });
+    }
+
+    function drawLine(order1){
         linePoints = [];
         var names = [];
+
+        var order = order1.order;
+
         for(let i = 0; i < order.length; i++){
             var pointIndex = order[i];
             var pointCord = points[pointIndex].latlng;
 
             linePoints.push(pointCord);
-            names.push(points[pointIndex].name);
+            names.push(points[pointIndex]._id + ': ' + points[pointIndex].name);
+        }
+
+        var totalWeight = 0;
+        for(let i = 0; i < order1.detail.length; i++){
+            totalWeight += order1.detail[i].weight;
         }
 
         var polyline = L.polyline(linePoints, {color: 'red'});
         lineLayerGroup = L.layerGroup([polyline]);
         lineLayerGroup.addTo(mymap);
 
-        $('#result').html(names.join('<br />'));
+        $('#result').html(names.join('\n') + '\n\n' + 'Total: ' + totalWeight);
     }
 
     function calcAndDrawLine(){
@@ -135,8 +166,13 @@ $(function(){
             lineLayerGroup.clearLayers();
         }
 
-        var order = calc();
-        drawLine(order);
+        calc(function(err, order){
+            if(err){
+                return alert(err);
+            }
+
+            drawLine(order);
+        });
     }
 
     $('#generatePoints').click(generateMarkers);

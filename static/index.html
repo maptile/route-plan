@@ -11,8 +11,6 @@
         <!-- Make sure you put this AFTER Leaflet's CSS -->
         <script type="text/javascript" src="assets/leaflet/leaflet.js"></script>
         <script type="text/javascript" src="assets/leaflet.ChineseTmsProviders.js"></script>
-        <script type="text/javascript" src="salesman.js"></script>
-        <script type="text/javascript" src="nameGenerator.js"></script>
         <script type="text/javascript" src="page.js"></script>
 
         <style type="text/css">
@@ -36,11 +34,11 @@
     </head>
     <body>
         <div id="control">
-            Point count: <input id="count" value="20" />
+            Point count: <input id="count" value="[1, 2, 3, 4, 5, 6, 7]" />
             <button id="generatePoints">Generate Points</button>
             <button id="calcAndDraw">Calc & Draw</button>
             <button id="clear">Clear</button>
-            <div id="result"></div>
+            <pre id="result"></pre>
         </div>
 
         <div id="mapid"></div>

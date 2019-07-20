@@ -93,11 +93,14 @@ async function calcAllAvailableRoutes(customers){
 }
 
 async function getCustomers(ctx){
-    const ids = ctx.query.ids.split(',');
+    console.log(ctx.query.ids);
+    const ids = JSON.parse(ctx.query.ids);
     const customerDb = jsonDb.use('customer');
 
     try{
+        console.log(ids);
         const customers = customerDb.find(ids);
+        console.log(customers);
         ctx.body = makeResponseData(null, customers);
     } catch(e){
         ctx.body = makeResponseData(e);
@@ -107,14 +110,7 @@ async function getCustomers(ctx){
 async function addCustomers(ctx){
     logger.trace('Adding new customers');
 
-    let data;
-    try{
-        data = JSON.parse(ctx.request.body.data);
-    } catch(e){
-        logger.error('Invalid posted data');
-        ctx.body = makeResponseData(e);
-        return;
-    }
+    const data = ctx.request.body.customers;
 
     const newCustomers = await getNewCustomers(data);
 
@@ -130,22 +126,36 @@ async function addCustomers(ctx){
     await calcAllAvailableRoutes(newCustomers);
 
     const customerDb = jsonDb.use('customer');
-    customerDb.upsert(newCustomers);
+    customerDb.insert(newCustomers);
     jsonDb.save();
     ctx.body = makeResponseData(null, 'ok');
 }
 
 async function calcVisitOrder(ctx){
-    const customerIds = JSON.parse(ctx.request.body.data);
+    const customerIds = ctx.request.body.customerIds;
 
     const routeMatrix = await generateRouteMatrix(customerIds);
 
     logger.debug('routeMatrix is', routeMatrix);
     const order = await solver.solveTsp(routeMatrix, true, {});
 
-    logger.debug('response body is', order);
+    const data = {
+        order,
+        detail: []
+    };
 
-    ctx.body = makeResponseData(null, order);
+    for(let i = 0; i < order.length - 1; i++){
+        const fromPoint = order[i];
+        const toPoint = order[i + 1];
+
+        data.detail.push({
+            start: fromPoint,
+            end: toPoint,
+            weight: routeMatrix[fromPoint][toPoint]
+        });
+    }
+
+    ctx.body = makeResponseData(null, data);
 }
 
 function makeResponseData(error, data){
@@ -156,16 +166,20 @@ function makeResponseData(error, data){
         };
     }
 
-    if(typeof data === 'string'){
-        return {
+    let result;
+    if(typeof data === 'string' || Array.isArray(data)){
+        result = {
             status: 1,
             data
         };
     } else {
-        return Object.assign(data, {
+        result = Object.assign(data, {
             status: 1
         });
     }
+
+    logger.debug('Response body is', result);
+    return result;
 }
 
 module.exports = {

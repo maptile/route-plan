@@ -129,24 +129,25 @@ function use(dbName){
         interfaces.delete = function(id1, id2){
             return del(dbName, getCombinedId(id1, id2));
         };
-
-        return interfaces;
     } else {
-        return {
-            find: (id) => {
-                return find(dbName, id);
-            },
-            insert: (data) => {
-                return upsert(dbName, data);
-            },
-            update: (data) => {
-                return upsert(dbName, data);
-            },
-            delete: (id) => {
-                return del(dbName, id);
-            }
+        interfaces.find = (id) => {
+            return find(dbName, id);
+        };
+
+        interfaces.insert = (data) => {
+            return upsert(dbName, data);
+        };
+
+        interfaces.update = (data) => {
+            return upsert(dbName, data);
+        };
+
+        interfaces.delete = (id) => {
+            return del(dbName, id);
         };
     }
+
+    return interfaces;
 }
 
 module.exports = {

@@ -92,6 +92,18 @@ async function calcAllAvailableRoutes(customers){
     }
 }
 
+async function getCustomers(ctx){
+    const ids = ctx.query.ids.split(',');
+    const customerDb = jsonDb.use('customer');
+
+    try{
+        const customers = customerDb.find(ids);
+        ctx.body = makeResponseData(null, customers);
+    } catch(e){
+        ctx.body = makeResponseData(e);
+    }
+}
+
 async function addCustomers(ctx){
     logger.trace('Adding new customers');
 
@@ -124,7 +136,7 @@ async function addCustomers(ctx){
 }
 
 async function calcVisitOrder(ctx){
-    const customerIds = ctx.body.data;
+    const customerIds = JSON.parse(ctx.request.body.data);
 
     const routeMatrix = await generateRouteMatrix(customerIds);
 
@@ -157,6 +169,7 @@ function makeResponseData(error, data){
 }
 
 module.exports = {
+    getCustomers,
     addCustomers,
     calcVisitOrder
 };

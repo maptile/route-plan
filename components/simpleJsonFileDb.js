@@ -9,6 +9,7 @@ const dbFilePath = path.join(env.appRoot, 'sampledata/db.json');
 let db = {};
 
 function loadFile(){
+    logger.trace(`Loading db file to memory`);
     try{
         fs.accessSync(dbFilePath);
     } catch(e){
@@ -26,6 +27,7 @@ function loadFile(){
 }
 
 function save(){
+    logger.trace(`Saving db to file`);
     try{
         const data = JSON.stringify(db, null, 2);
         fs.writeFileSync(dbFilePath, data, {encoding: 'utf-8'});
@@ -38,6 +40,8 @@ function save(){
 }
 
 function upsert(dbName, data){
+    logger.trace(`Upsert data in ${dbName}`);
+
     if(!data){
         throw new Error('Invalid argument: data is empty');
     }
@@ -63,14 +67,23 @@ function all(dbName){
 }
 
 function find(dbName, id){
+    logger.trace(`Finding ${id} in ${dbName}`);
+
     if(!id){
         throw new Error('argument "id" is required');
     }
 
-    return db[dbName][id];
+    if(!Array.isArray(id)){
+        return db[dbName][id];
+    }
+
+    return id.map((i) => {
+        return db[dbName][i];
+    });
 }
 
 function del(dbName, id){
+    logger.trace(`Deleting ${id} in ${dbName}`);
     if(!id){
         throw new Error('argument "id" is required');
     }
@@ -92,30 +105,32 @@ function use(dbName){
     };
 
     if(dbName == 'route'){
-        interfaces.find = function(id1, id2){
-            let id = `${id1}:${id2}`;
-            const result = find(dbName, id);
-
-            if(result){
-                return result;
+        const getCombinedId = function(id1, id2){
+            if(id1 < id2){
+                return `${id1}:${id2}`;
             }
 
-            id = `${id2}:${id1}`;
+            return `${id2}:${id1}`;
+        };
 
-            return find(dbName, id);
+        interfaces.find = function(id1, id2){
+            return find(dbName, getCombinedId(id1, id2));
         };
 
         interfaces.insert = function(id1, id2, data){
-            interfaces.find(id1, id2);
+            data._id = getCombinedId(id1, id2);
+            return upsert(dbName, data);
         };
 
-        interfaces.update = function(id1, id2, data){
-            
+        interfaces.update = function(data){
+            return upsert(dbName, data);
         };
 
         interfaces.delete = function(id1, id2){
-            
+            return del(dbName, getCombinedId(id1, id2));
         };
+
+        return interfaces;
     } else {
         return {
             find: (id) => {
